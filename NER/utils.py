@@ -34,13 +34,14 @@ def get_data(sentences, labels, batch_size=64, test_ratio=0.2):
 
     val = GMBDataset(test_sentences, test_labels)
     val_dl = DataLoader(val, batch_size=len(val), shuffle=False)
-    return trn_dl, val_dl
+    return trn_dl, val_dl, np.max(sentences) + 1, np.max(labels) + 1
 
 
 def train_batch(sentences, labels, model, opt, loss_fn):
     model.train()
     prediction = model(sentences)
-    loss = loss_fn(prediction, labels)
+    prediction = prediction.view(sentences.shape[0] * sentences.shape[1], -1)
+    loss = loss_fn(prediction, labels.contiguous().view(-1))
     loss.backward()
     opt.step()
     opt.zero_grad()
@@ -51,6 +52,7 @@ def train_batch(sentences, labels, model, opt, loss_fn):
 def accuracy(sentences, labels, model):
     model.eval()
     prediction = model(sentences)
+    prediction = prediction.view(sentences.shape[0] * sentences.shape[1], -1)
     _, argmaxes = prediction.max(-1)
-    is_correct = prediction == labels
+    is_correct = argmaxes == labels.view(-1)
     return is_correct.cpu().numpy().tolist()
