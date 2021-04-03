@@ -35,3 +35,22 @@ def get_data(sentences, labels, batch_size=64, test_ratio=0.2):
     val = GMBDataset(test_sentences, test_labels)
     val_dl = DataLoader(val, batch_size=len(val), shuffle=False)
     return trn_dl, val_dl
+
+
+def train_batch(sentences, labels, model, opt, loss_fn):
+    model.train()
+    prediction = model(sentences)
+    loss = loss_fn(prediction, labels)
+    loss.backward()
+    opt.step()
+    opt.zero_grad()
+    return loss.item()
+
+
+@torch.no_grad()
+def accuracy(sentences, labels, model):
+    model.eval()
+    prediction = model(sentences)
+    _, argmaxes = prediction.max(-1)
+    is_correct = prediction == labels
+    return is_correct.cpu().numpy().tolist()
